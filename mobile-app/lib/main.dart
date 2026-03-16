@@ -11,7 +11,14 @@ import 'package:medtrack_mobile/modules/settings/settings_screen.dart';
 import 'package:medtrack_mobile/modules/settings/biometric_provider.dart';
 import 'package:medtrack_mobile/modules/settings/pin_provider.dart';
 import 'package:medtrack_mobile/modules/settings/pin_lock_screen.dart';
+import 'package:medtrack_mobile/widgets/notification_banner.dart';
+import 'package:medtrack_mobile/widgets/profile_drawer.dart';
+import 'package:medtrack_mobile/widgets/notification_drawer.dart';
+import 'package:medtrack_mobile/core/navigation/navigation_provider.dart';
+import 'package:medtrack_mobile/core/notifications/in_app_notification_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
+import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,11 +30,78 @@ void main() async {
   );
 }
 
-class MedTrackApp extends ConsumerWidget {
+class MedTrackApp extends ConsumerStatefulWidget {
   const MedTrackApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MedTrackApp> createState() => _MedTrackAppState();
+}
+
+class _MedTrackAppState extends ConsumerState<MedTrackApp> {
+  Timer? _dueCheckTimer;
+  final Set<String> _notifiedTimes = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _setupNotificationCallbacks();
+    _startDueCheckTimer();
+  }
+
+  @override
+  void dispose() {
+    _dueCheckTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startDueCheckTimer() {
+    _dueCheckTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _checkDueMedications();
+    });
+    // Check immediately on start
+    _checkDueMedications();
+  }
+
+  void _checkDueMedications() {
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) return;
+
+    final medsValue = ref.read(medicationListProvider);
+    medsValue.whenData((meds) {
+      final now = DateTime.now();
+      final currentTime = DateFormat('HH:mm').format(now);
+      final today = DateFormat('yyyy-MM-dd').format(now);
+
+      for (final med in meds) {
+        for (final schedule in med.schedules) {
+          final notifyKey = '${med.id}_${today}_${schedule.timeOfDay}';
+          if (schedule.timeOfDay == currentTime && !_notifiedTimes.contains(notifyKey)) {
+            _notifiedTimes.add(notifyKey);
+            ref.read(inAppNotificationProvider.notifier).show(
+              InAppNotification(
+                medId: med.id!,
+                title: 'Medication Ready',
+                body: 'It\'s time for your ${med.name} (${med.dosage ?? ""})',
+                time: schedule.timeOfDay,
+              ),
+            );
+          }
+        }
+      }
+    });
+  }
+
+  void _setupNotificationCallbacks() {
+    NotificationService.setActionCallback((medId, time, status) async {
+      final repo = ref.read(medicationRepositoryProvider);
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      await repo.logIntake(medId, time, today, status);
+      ref.refresh(todayLogsProvider);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
     return MaterialApp(
@@ -96,7 +170,17 @@ class MedTrackApp extends ConsumerWidget {
           labelStyle: TextStyle(color: Colors.pink.shade600, fontSize: 13),
         ),
       ),
-      home: authState.isAuthenticated ? const HomeScreen() : const LoginScreen(),
+      home: Stack(
+        children: [
+          authState.isAuthenticated ? const HomeScreen() : const LoginScreen(),
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: NotificationBanner(),
+          ),
+        ],
+      ),
       debugShowCheckedModeBanner: false,
     );
   }
@@ -110,7 +194,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _selectedIndex = 0;
   bool _isAuthenticated = false;
 
   static const List<Widget> _screens = [
@@ -188,14 +271,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
+    final selectedIndex = ref.watch(navigationProvider);
+
     return Scaffold(
-      appBar: _selectedIndex == 3 
+      drawer: const ProfileDrawer(),
+      endDrawer: const NotificationDrawer(),
+      appBar: selectedIndex == 3 
           ? null // Settings screen has its own AppBar
           : AppBar(
-              toolbarHeight: 52,
-              title: const Text('MedTrack'),
+              toolbarHeight: 60,
+              elevation: 0,
+              centerTitle: true,
+              leading: Builder(
+                builder: (context) => IconButton(
+                  icon: CircleAvatar(
+                    radius: 14,
+                    backgroundColor: Colors.white,
+                    child: Text(
+                      (ref.watch(authProvider).email ?? 'U')[0].toUpperCase(),
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.pink),
+                    ),
+                  ),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              ),
+              title: const Text(
+                'MedTrack',
+                style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+              ),
+              actions: [
+                Builder(
+                  builder: (context) => IconButton(
+                    icon: const Icon(Icons.notifications_outlined),
+                    onPressed: () => Scaffold.of(context).openEndDrawer(),
+                  ),
+                ),
+              ],
             ),
-      body: _screens[_selectedIndex],
+      body: _screens[selectedIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -207,8 +320,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
         child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: (index) => setState(() => _selectedIndex = index),
+          currentIndex: selectedIndex,
+          onTap: (index) => ref.read(navigationProvider.notifier).setIndex(index),
           selectedItemColor: Colors.pink.shade600,
           unselectedItemColor: Colors.grey.shade400,
           backgroundColor: Colors.white,

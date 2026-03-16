@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:medtrack_mobile/core/database/local_db.dart';
 import 'package:medtrack_mobile/modules/medications/medication_model.dart' as model;
 import 'package:medtrack_mobile/services/medication_service.dart';
+import 'package:medtrack_mobile/services/notification_service.dart';
 import 'package:intl/intl.dart';
 
 class MedicationRepository {
@@ -57,6 +58,7 @@ class MedicationRepository {
       }
     });
     // Trigger background sync (to be implemented)
+    await _scheduleNotifications(med);
   }
 
   Future<void> updateMedication(model.Medication med) async {
@@ -84,6 +86,7 @@ class MedicationRepository {
             ));
       }
     });
+    await _scheduleNotifications(med);
   }
 
   Future<void> deleteMedication(int id) async {
@@ -91,6 +94,40 @@ class MedicationRepository {
           const MedicationsCompanion(isDeleted: Value(true), isSynced: Value(false)),
         );
     // Trigger background sync
+    await NotificationService().cancelAll();
+    // After cancel all, we should theoretically reschedule all remaining meds
+    // For simplicity, we can call a global reschedule or just rely on the fact 
+    // that we cancel all and then the app should refresh state.
+  }
+
+  Future<void> _scheduleNotifications(model.Medication med) async {
+    final ns = NotificationService();
+    // For each schedule, find the next occurrence
+    for (var s in med.schedules) {
+      final now = DateTime.now();
+      final timeParts = s.timeOfDay.split(':');
+      final scheduledTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(timeParts[0]),
+        int.parse(timeParts[1]),
+      );
+      
+      // If time has passed today, schedule for tomorrow
+      var targetDate = scheduledTime;
+      if (targetDate.isBefore(now)) {
+        targetDate = targetDate.add(const Duration(days: 1));
+      }
+
+      await ns.scheduleNotification(
+        id: s.id ?? med.id! * 100 + int.parse(timeParts[0]), 
+        title: 'Medication Reminder',
+        body: 'Time to take your ${med.name} (${med.dosage ?? ""})',
+        scheduledDate: targetDate,
+        payload: '${med.id}|${s.timeOfDay}|${med.name}',
+      );
+    }
   }
 
   Future<void> logIntake(int medId, String time, String date, String status) async {

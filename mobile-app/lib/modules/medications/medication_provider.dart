@@ -4,7 +4,6 @@ import 'package:medtrack_mobile/core/database/local_db.dart' hide Medication;
 import 'package:medtrack_mobile/core/repository/medication_repository.dart';
 import 'package:medtrack_mobile/services/medication_service.dart';
 import 'package:medtrack_mobile/core/api/api_client.dart';
-
 import 'package:medtrack_mobile/services/sync_service.dart';
 
 final medicationServiceProvider = Provider((ref) => MedicationService(ref.watch(apiClientProvider)));
@@ -21,45 +20,49 @@ final syncServiceProvider = Provider((ref) => SyncService(
     ));
 
 class MedicationListNotifier extends StateNotifier<AsyncValue<List<Medication>>> {
-  final MedicationRepository _repository;
+  final MedicationRepository repository;
 
-  MedicationListNotifier(this._repository) : super(const AsyncValue.loading()) {
+  MedicationListNotifier(this.repository) : super(const AsyncValue.loading()) {
     refresh();
   }
 
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     try {
-      final meds = await _repository.getAllMedications();
+      final meds = await repository.getAllMedications();
       state = AsyncValue.data(meds);
-    } catch (e, st) {
+    } 
+    catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
   Future<void> addMedication(Medication medication) async {
     try {
-      await _repository.addMedication(medication);
+      await repository.addMedication(medication);
       await refresh();
-    } catch (e) {
+    } 
+    catch (e) {
       // Handle error
     }
   }
 
   Future<void> removeMedication(int id) async {
     try {
-      await _repository.deleteMedication(id);
+      await repository.deleteMedication(id);
       await refresh();
-    } catch (e) {
+    } 
+    catch (e) {
       // Handle error
     }
   }
 
   Future<void> updateMedication(Medication medication) async {
     try {
-      await _repository.updateMedication(medication);
+      await repository.updateMedication(medication);
       await refresh();
-    } catch (e) {
+    } 
+    catch (e) {
       // Handle error
     }
   }
