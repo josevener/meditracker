@@ -1,0 +1,57 @@
+# Miscellaneous
+*.log
+*.class
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Visual Studio Code related
+.vscode/
+
+# Node.js related
+node_modules/
+.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+/coverage/
+
+# Android/iOS specific (within mobile-app)
+mobile-app/android/app/debug
+mobile-app/android/app/profile
+mobile-app/android/app/release
+mobile-app/ios/Flutter/Generated.xcconfig
+mobile-app/ios/Flutter/flutter_export_environment.sh
+
+# Monorepo specific paths
+/mobile-app/.dart_tool/
+/mobile-app/.flutter-plugins
+/mobile-app/.flutter-plugins-dependencies
+/mobile-app/.packages
+/mobile-app/medtrack_mobile.iml
+/mobile-app/medtrack_mobile.ipr
+/mobile-app/medtrack_mobile.iws
+
+/backend-api/node_modules/
+/backend-api/.env
