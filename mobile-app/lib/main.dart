@@ -9,6 +9,8 @@ import 'package:medtrack_mobile/services/notification_service.dart';
 import 'package:medtrack_mobile/modules/calendar/calendar_screen.dart';
 import 'package:medtrack_mobile/modules/settings/settings_screen.dart';
 import 'package:medtrack_mobile/modules/settings/biometric_provider.dart';
+import 'package:medtrack_mobile/modules/settings/pin_provider.dart';
+import 'package:medtrack_mobile/modules/settings/pin_lock_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -127,18 +129,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // 1. Sync data in background
     Future.microtask(() => ref.read(syncServiceProvider).sync());
 
-    // 2. Check biometrics
+    // 2. Security Flow
     final biometricEnabled = ref.read(biometricEnabledProvider);
+    final pinState = ref.read(pinProvider);
+    final isPinEnabled = pinState.value != null;
+
     if (biometricEnabled) {
       final authenticated = await ref.read(biometricServiceProvider).authenticate();
       if (authenticated) {
         setState(() => _isAuthenticated = true);
-      } else {
-        // If failed, we could exit or logout, but a common pattern is to keep prompting
-        // or offer a 'Logout' option if they can't get in.
-        // For simplicity, let's just keep authenticated as false which shows a lock screen.
+        return; // Success
       }
-    } else {
+    }
+
+    if (isPinEnabled) {
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => PinLockScreen(
+              onAuthenticated: () {
+                setState(() => _isAuthenticated = true);
+                Navigator.of(context).pop();
+              },
+            ),
+          ),
+        );
+      }
+    } 
+    else {
+      // Neither enabled or biometrics failed and no PIN
       setState(() => _isAuthenticated = true);
     }
   }
@@ -154,10 +173,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const Icon(Icons.lock_outline, size: 64, color: Colors.pink),
               const SizedBox(height: 20),
               const Text('MedTrack is locked', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
+              const Text('Authentication required to continue', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _handleStartup,
-                child: const Text('Unlock with Biometrics'),
+                child: const Text('Unlock App'),
               ),
               TextButton(
                 onPressed: () => ref.read(authProvider.notifier).logout(),

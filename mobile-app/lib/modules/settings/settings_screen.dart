@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:medtrack_mobile/modules/auth/auth_provider.dart';
 import 'package:medtrack_mobile/modules/medications/medication_provider.dart';
 import 'package:medtrack_mobile/modules/settings/biometric_provider.dart';
+import 'package:medtrack_mobile/modules/settings/pin_provider.dart';
+import 'package:medtrack_mobile/modules/settings/pin_lock_screen.dart';
 import 'package:medtrack_mobile/widgets/confirmation_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -115,6 +117,70 @@ class SettingsScreen extends ConsumerWidget {
                         }
                       },
                       activeColor: Colors.pink.shade600,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildSectionTitle('Security'),
+          Card(
+            child: Column(
+              children: [
+                Consumer(
+                  builder: (context, ref, child) {
+                    final pinState = ref.watch(pinProvider);
+                    final isPinSet = pinState.value != null;
+                    return SwitchListTile(
+                      dense: true,
+                      secondary: const Icon(Icons.password, size: 20),
+                      title: const Text('PIN Lock', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Require a 6-digit PIN to open the app', style: TextStyle(fontSize: 12)),
+                      value: isPinSet,
+                      onChanged: (val) {
+                        if (val) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const PinLockScreen(isSetupMode: true),
+                            ),
+                          );
+                        } else {
+                          ConfirmationDialog.show(
+                            context: context,
+                            title: 'Disable PIN',
+                            content: 'Are you sure you want to disable PIN protection?',
+                            confirmText: 'Disable',
+                            confirmColor: Colors.redAccent,
+                            onConfirm: () => ref.read(pinProvider.notifier).removePin(),
+                          );
+                        }
+                      },
+                      activeColor: Colors.pink.shade600,
+                    );
+                  },
+                ),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final pinState = ref.watch(pinProvider);
+                    if (pinState.value == null) return const SizedBox.shrink();
+                    return Column(
+                      children: [
+                        const Divider(height: 1),
+                        ListTile(
+                          dense: true,
+                          leading: const Icon(Icons.edit_outlined, size: 20),
+                          title: const Text('Change PIN', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                          trailing: Icon(Icons.arrow_forward_ios, size: 14, color: Colors.pink.shade200),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const PinLockScreen(isSetupMode: true),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     );
                   },
                 ),
