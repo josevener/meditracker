@@ -7,7 +7,7 @@ import 'package:medtrack_mobile/modules/medications/medication_list_screen.dart'
 import 'package:medtrack_mobile/modules/daily_status/daily_status_screen.dart';
 import 'package:medtrack_mobile/services/notification_service.dart';
 import 'package:medtrack_mobile/modules/calendar/calendar_screen.dart';
-import 'package:medtrack_mobile/widgets/confirmation_dialog.dart';
+import 'package:medtrack_mobile/modules/settings/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -112,6 +112,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     DailyStatusScreen(),
     MedicationListScreen(),
     CalendarScreen(),
+    SettingsScreen(),
   ];
 
   @override
@@ -123,36 +124,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 52,
-        title: const Text('MedTrack'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.sync, size: 20),
-            tooltip: 'Sync Data',
-            onPressed: () async {
-              await ref.read(syncServiceProvider).sync();
-              ref.read(medicationListProvider.notifier).refresh();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, size: 20),
-            tooltip: 'Logout',
-            onPressed: () {
-              ConfirmationDialog.show(
-                context: context,
-                title: 'Logout',
-                content: 'Are you sure you want to logout?',
-                confirmText: 'Logout',
-                confirmColor: Colors.redAccent,
-                onConfirm: () {
-                  ref.read(authProvider.notifier).logout();
-                },
-              );
-            },
-          ),
-        ],
-      ),
+      appBar: _selectedIndex == 3 
+          ? null // Settings screen has its own AppBar
+          : AppBar(
+              toolbarHeight: 52,
+              title: const Text('MedTrack'),
+            ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -178,6 +155,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             BottomNavigationBarItem(icon: Icon(Icons.today_outlined), activeIcon: Icon(Icons.today), label: 'Today'),
             BottomNavigationBarItem(icon: Icon(Icons.medication_outlined), activeIcon: Icon(Icons.medication), label: 'List'),
             BottomNavigationBarItem(icon: Icon(Icons.calendar_month_outlined), activeIcon: Icon(Icons.calendar_month), label: 'Adherence'),
+            BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), activeIcon: Icon(Icons.settings), label: 'Settings'),
           ],
         ),
       ),

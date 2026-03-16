@@ -7,12 +7,14 @@ final authServiceProvider = Provider((ref) => AuthService());
 class AuthState {
   final bool isAuthenticated;
   final String? token;
+  final String? email;
   final String? error;
   final bool isLoading;
 
   AuthState({
     this.isAuthenticated = false,
     this.token,
+    this.email,
     this.error,
     this.isLoading = false,
   });
@@ -20,12 +22,14 @@ class AuthState {
   AuthState copyWith({
     bool? isAuthenticated,
     String? token,
+    String? email,
     String? error,
     bool? isLoading,
   }) {
     return AuthState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       token: token ?? this.token,
+      email: email ?? this.email,
       error: error ?? this.error,
       isLoading: isLoading ?? this.isLoading,
     );
@@ -42,8 +46,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _checkAuth() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
+    final email = prefs.getString('auth_email');
     if (token != null) {
-      state = state.copyWith(isAuthenticated: true, token: token);
+      state = state.copyWith(isAuthenticated: true, token: token, email: email);
     }
   }
 
@@ -55,8 +60,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', token);
+      await prefs.setString('auth_email', email);
       
-      state = state.copyWith(isLoading: false, isAuthenticated: true, token: token);
+      state = state.copyWith(isLoading: false, isAuthenticated: true, token: token, email: email);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -70,8 +76,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', token);
+      await prefs.setString('auth_email', email);
       
-      state = state.copyWith(isLoading: false, isAuthenticated: true, token: token);
+      state = state.copyWith(isLoading: false, isAuthenticated: true, token: token, email: email);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -80,6 +87,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
+    await prefs.remove('auth_email');
     state = AuthState();
   }
 }
