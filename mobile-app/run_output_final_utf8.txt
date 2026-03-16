@@ -1,0 +1,95 @@
+﻿Launching lib\main.dart on Infinix X6833B in debug mode...
+Running Gradle task 'assembleDebug'...                          
+flutter : Warning: Flutter 
+support for your project's 
+Kotlin version (1.9.22) will 
+soon be dropped. Please 
+upgrade your Kotlin version 
+to a version of at least 
+2.1.0 soon.
+At line:1 char:1
++ flutter run > 
+run_output_final.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo          : 
+    NotSpecified: (Warning:   
+  Flutte...ast 2.1.0 soon.:   
+ String) [], RemoteExcepti    
+on
+    + FullyQualifiedErrorId : 
+    NativeCommandError
+ 
+Alternatively, use the flag "-
+-android-skip-build-dependency
+-validation" to bypass this 
+check.
+
+Potential fix: Your project's 
+KGP version is typically 
+defined in the plugins block 
+of the `settings.gradle` file 
+(C:\Users\jose.rafael\flutter_
+projects\medtrack\mobile-app\a
+ndroid/settings.gradle), by a 
+plugin with the id of 
+org.jetbrains.kotlin.android. 
+If you don't see a plugins 
+block, your project was 
+likely created with an older 
+template version, in which 
+case it is most likely 
+defined in the top-level 
+build.gradle file (C:\Users\jo
+se.rafael\flutter_projects\med
+track\mobile-app\android/build
+.gradle) by the 
+ext.kotlin_version property.
+
+e: file:///C:/Users/jose.rafae
+l/AppData/Local/Pub/Cache/host
+ed/pub.dev/flutter_timezone-2.
+1.0/android/src/main/kotlin/ne
+t/wolverinebeach/flutter_timez
+one/FlutterTimezonePlugin.kt:1
+2:48 Unresolved reference: 
+Registrar
+e: file:///C:/Users/jose.rafae
+l/AppData/Local/Pub/Cache/host
+ed/pub.dev/flutter_timezone-2.
+1.0/android/src/main/kotlin/ne
+t/wolverinebeach/flutter_timez
+one/FlutterTimezonePlugin.kt:2
+3:37 Unresolved reference: 
+Registrar
+
+FAILURE: Build failed with an 
+exception.
+
+* What went wrong:
+Execution failed for task ':fl
+utter_timezone:compileDebugKot
+lin'.
+> A failure occurred while 
+executing org.jetbrains.kotlin
+.compilerRunner.GradleCompiler
+RunnerWithWorkers$GradleKotlin
+CompilerWorkAction
+   > Compilation error. See 
+log for more details
+
+* Try:
+> Run with --stacktrace 
+option to get the stack trace.
+> Run with --info or --debug 
+option to get more log output.
+> Run with --scan to get full 
+insights.
+> Get more help at 
+https://help.gradle.org.
+
+BUILD FAILED in 9s
+Running Gradle task 'assembleDebug'...                              9.8s
+Error: Gradle task 
+assembleDebug failed with 
+exit code 1

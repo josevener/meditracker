@@ -1,0 +1,36 @@
+name: medtrack_mobile
+description: "A medication tracking mobile application."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.5.1
+  go_router: ^16.3.0
+  dio: ^5.7.0
+  sqflite: ^2.4.1
+  path: ^1.9.1
+  flutter_local_notifications: ^18.0.1
+  connectivity_plus: ^6.1.3
+  intl: ^0.20.2
+  shared_preferences: ^2.3.5
+  drift: ^2.23.0
+  sqlite3_flutter_libs: ^0.5.26
+  table_calendar: ^3.1.2
+  path_provider: ^2.1.5
+  timezone: ^0.9.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  drift_dev: ^2.23.0
+  build_runner: ^2.4.15
+
+flutter:
+  uses-material-design: true
