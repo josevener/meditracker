@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:medtrack_mobile/modules/auth/auth_provider.dart';
 import 'package:medtrack_mobile/modules/medications/medication_provider.dart';
+import 'package:medtrack_mobile/modules/settings/biometric_provider.dart';
 import 'package:medtrack_mobile/widgets/confirmation_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -82,6 +83,40 @@ class SettingsScreen extends ConsumerWidget {
                     );
                   },
                   activeColor: Colors.pink.shade600,
+                ),
+                const Divider(height: 1),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final biometricEnabled = ref.watch(biometricEnabledProvider);
+                    return SwitchListTile(
+                      dense: true,
+                      secondary: const Icon(Icons.fingerprint, size: 20),
+                      title: const Text('Biometric Auth', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Use Fingerprint/FaceID to unlock', style: TextStyle(fontSize: 12)),
+                      value: biometricEnabled,
+                      onChanged: (val) async {
+                        if (val) {
+                          final available = await ref.read(biometricServiceProvider).isBiometricAvailable();
+                          if (!available) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Biometrics not available on this device')),
+                              );
+                            }
+                            return;
+                          }
+                          // Verify biometrics once before enabling
+                          final authenticated = await ref.read(biometricServiceProvider).authenticate();
+                          if (authenticated) {
+                            await ref.read(biometricEnabledProvider.notifier).toggle(true);
+                          }
+                        } else {
+                          await ref.read(biometricEnabledProvider.notifier).toggle(false);
+                        }
+                      },
+                      activeColor: Colors.pink.shade600,
+                    );
+                  },
                 ),
               ],
             ),

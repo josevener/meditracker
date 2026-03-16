@@ -8,6 +8,7 @@ import 'package:medtrack_mobile/modules/daily_status/daily_status_screen.dart';
 import 'package:medtrack_mobile/services/notification_service.dart';
 import 'package:medtrack_mobile/modules/calendar/calendar_screen.dart';
 import 'package:medtrack_mobile/modules/settings/settings_screen.dart';
+import 'package:medtrack_mobile/modules/settings/biometric_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,6 +108,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
+  bool _isAuthenticated = false;
 
   static const List<Widget> _screens = [
     DailyStatusScreen(),
@@ -118,11 +120,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _handleStartup();
+  }
+
+  Future<void> _handleStartup() async {
+    // 1. Sync data in background
     Future.microtask(() => ref.read(syncServiceProvider).sync());
+
+    // 2. Check biometrics
+    final biometricEnabled = ref.read(biometricEnabledProvider);
+    if (biometricEnabled) {
+      final authenticated = await ref.read(biometricServiceProvider).authenticate();
+      if (authenticated) {
+        setState(() => _isAuthenticated = true);
+      } else {
+        // If failed, we could exit or logout, but a common pattern is to keep prompting
+        // or offer a 'Logout' option if they can't get in.
+        // For simplicity, let's just keep authenticated as false which shows a lock screen.
+      }
+    } else {
+      setState(() => _isAuthenticated = true);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_isAuthenticated) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_outline, size: 64, color: Colors.pink),
+              const SizedBox(height: 20),
+              const Text('MedTrack is locked', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: _handleStartup,
+                child: const Text('Unlock with Biometrics'),
+              ),
+              TextButton(
+                onPressed: () => ref.read(authProvider.notifier).logout(),
+                child: const Text('Logout'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: _selectedIndex == 3 
           ? null // Settings screen has its own AppBar
