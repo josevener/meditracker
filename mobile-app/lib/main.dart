@@ -11,6 +11,7 @@ import 'package:medtrack_mobile/modules/settings/settings_screen.dart';
 import 'package:medtrack_mobile/modules/settings/biometric_provider.dart';
 import 'package:medtrack_mobile/modules/settings/pin_provider.dart';
 import 'package:medtrack_mobile/modules/settings/pin_lock_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -129,27 +130,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // 1. Sync data in background
     Future.microtask(() => ref.read(syncServiceProvider).sync());
 
-    // 2. Security Flow
-    final biometricEnabled = ref.read(biometricEnabledProvider);
-    final pinState = ref.read(pinProvider);
-    final isPinEnabled = pinState.value != null;
+    // 2. Security Flow - Use SharedPreferences directly for immediate startup check
+    final prefs = await SharedPreferences.getInstance();
+    final biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
+    final pin = prefs.getString('user_pin');
+    final isPinEnabled = pin != null;
 
-    if (biometricEnabled) {
-      final authenticated = await ref.read(biometricServiceProvider).authenticate();
-      if (authenticated) {
-        setState(() => _isAuthenticated = true);
-        return; // Success
-      }
-    }
-
-    if (isPinEnabled) {
+    if (biometricEnabled || isPinEnabled) {
       if (mounted) {
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => PinLockScreen(
               onAuthenticated: () {
                 setState(() => _isAuthenticated = true);
-                Navigator.of(context).pop();
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                }
               },
             ),
           ),
@@ -157,8 +153,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     } 
     else {
-      // Neither enabled or biometrics failed and no PIN
-      setState(() => _isAuthenticated = true);
+      // Neither enabled
+      if (mounted) {
+        setState(() => _isAuthenticated = true);
+      }
     }
   }
 

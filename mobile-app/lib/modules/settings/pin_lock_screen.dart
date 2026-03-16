@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:medtrack_mobile/modules/settings/pin_provider.dart';
+import 'package:medtrack_mobile/modules/settings/biometric_provider.dart';
 
 class PinLockScreen extends ConsumerStatefulWidget {
   final bool isSetupMode;
@@ -23,6 +24,35 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
   String _firstEnteredPin = ''; // Used for setup confirmation
   bool _isConfirming = false;
   String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.isSetupMode) {
+      _checkBiometrics();
+    }
+  }
+
+  Future<void> _checkBiometrics() async {
+    final biometricEnabled = ref.read(biometricEnabledProvider);
+    if (biometricEnabled) {
+      // Delay slightly to allow the screen to render
+      await Future.delayed(const Duration(milliseconds: 300));
+      _authenticateWithBiometrics();
+    }
+  }
+
+  Future<void> _authenticateWithBiometrics() async {
+    final authenticated = await ref.read(biometricServiceProvider).authenticate();
+    if (authenticated && mounted) {
+      if (widget.onAuthenticated != null) {
+        widget.onAuthenticated!();
+      } 
+      else {
+        Navigator.of(context).pop();
+      }
+    }
+  }
 
   void _handleNumberPressed(int number) {
     if (_enteredPin.length < 6) {
@@ -208,7 +238,15 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            const SizedBox(width: 80, height: 80), // Empty space
+            Consumer(
+              builder: (context, ref, child) {
+                final biometricEnabled = ref.watch(biometricEnabledProvider);
+                if (!biometricEnabled || widget.isSetupMode) {
+                  return const SizedBox(width: 80, height: 80);
+                }
+                return _buildIconButton(Icons.fingerprint, _authenticateWithBiometrics);
+              },
+            ),
             _buildKey(0),
             _buildIconButton(Icons.backspace_outlined, _handleBackspace),
           ],
