@@ -95,45 +95,44 @@ class NotificationService {
     String? payload,
   }) async {
     try {
-      print('Notification: Scheduling for ${scheduledDate.toIso8601String()} with ID $id');
+      final tz.TZDateTime tzDate = tz.TZDateTime.from(scheduledDate, tz.local);
+      
+      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'medtrack_alarm_channel',
+        'Medication Alarms',
+        channelDescription: 'This channel is used for important medication reminders.',
+        importance: Importance.max,
+        priority: Priority.max,
+        ticker: 'ticker',
+        playSound: true,
+        enableVibration: true,
+        fullScreenIntent: true,
+        category: AndroidNotificationCategory.alarm,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        visibility: NotificationVisibility.public,
+        additionalFlags: Int32List.fromList([4]),
+      );
+
+      final DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        interruptionLevel: InterruptionLevel.timeSensitive,
+      );
+
+      final NotificationDetails notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
       await _notificationsPlugin.zonedSchedule(
         id,
         title,
         body,
-        tz.TZDateTime.from(scheduledDate, tz.local),
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            'medtrack_alarm_channel',
-            'Medication Alarms',
-            channelDescription: 'This channel is used for important medication reminders.',
-            importance: Importance.max,
-            priority: Priority.max,
-            ticker: 'ticker',
-            playSound: true,
-            enableVibration: true,
-            fullScreenIntent: true, // Allow covering screen if locked
-            category: AndroidNotificationCategory.alarm,
-            audioAttributesUsage: AudioAttributesUsage.alarm,
-            visibility: NotificationVisibility.public,
-            additionalFlags: Int32List.fromList([4]), // FLAG_INSISTENT
-            actions: <AndroidNotificationAction>[
-              const AndroidNotificationAction(
-                'mark_taken',
-                'Mark as Taken',
-                showsUserInterface: true,
-              ),
-            ],
-          ),
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-            interruptionLevel: InterruptionLevel.timeSensitive,
-          ),
-        ),
+        tzDate,
+        notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
         payload: payload,
       );
@@ -152,7 +151,7 @@ class NotificationService {
           title,
           body,
           tz.TZDateTime.from(scheduledDate, tz.UTC),
-        NotificationDetails(
+          NotificationDetails(
             android: AndroidNotificationDetails(
               'medtrack_alarm_channel',
               'Medication Alarms',
@@ -166,7 +165,7 @@ class NotificationService {
               visibility: NotificationVisibility.public,
               additionalFlags: Int32List.fromList([4]), // FLAG_INSISTENT
             ),
-            iOS: DarwinNotificationDetails(
+            iOS: const DarwinNotificationDetails(
               presentAlert: true,
               presentBadge: true,
               presentSound: true,

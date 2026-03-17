@@ -1,10 +1,16 @@
 const db = require('../config/db');
 
 const UserModel = {
-  create: async (email, hashedPassword) => {
+  create: async (userData) => {
+    const { email, hashedPassword, first_name, last_name, gender, birthdate, address } = userData;
     const [id] = await db('users').insert({
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      first_name,
+      last_name,
+      gender,
+      birthdate,
+      address
     });
     return id;
   },

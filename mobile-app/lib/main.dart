@@ -14,6 +14,7 @@ import 'package:medtrack_mobile/modules/settings/pin_lock_screen.dart';
 import 'package:medtrack_mobile/widgets/notification_banner.dart';
 import 'package:medtrack_mobile/widgets/profile_drawer.dart';
 import 'package:medtrack_mobile/widgets/notification_drawer.dart';
+import 'package:medtrack_mobile/modules/onboarding/onboarding_screen.dart';
 import 'package:medtrack_mobile/core/navigation/navigation_provider.dart';
 import 'package:medtrack_mobile/core/notifications/in_app_notification_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -40,12 +41,21 @@ class MedTrackApp extends ConsumerStatefulWidget {
 class _MedTrackAppState extends ConsumerState<MedTrackApp> {
   Timer? _dueCheckTimer;
   final Set<String> _notifiedTimes = {};
+  bool? _onboardingCompleted;
 
   @override
   void initState() {
     super.initState();
     _setupNotificationCallbacks();
     _startDueCheckTimer();
+    _checkOnboardingStatus();
+  }
+
+  Future<void> _checkOnboardingStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
+    });
   }
 
   @override
@@ -103,6 +113,17 @@ class _MedTrackAppState extends ConsumerState<MedTrackApp> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+
+    Widget homeWidget;
+    if (_onboardingCompleted == null) {
+      homeWidget = const Scaffold(body: Center(child: CircularProgressIndicator()));
+    } else if (authState.isAuthenticated) {
+      homeWidget = const HomeScreen();
+    } else if (!_onboardingCompleted!) {
+      homeWidget = const OnboardingScreen();
+    } else {
+      homeWidget = const LoginScreen();
+    }
 
     return MaterialApp(
       title: 'MedTrack',
@@ -172,7 +193,7 @@ class _MedTrackAppState extends ConsumerState<MedTrackApp> {
       ),
       home: Stack(
         children: [
-          authState.isAuthenticated ? const HomeScreen() : const LoginScreen(),
+          homeWidget,
           const Positioned(
             top: 0,
             left: 0,

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:medtrack_mobile/services/auth_service.dart';
+import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final authServiceProvider = Provider((ref) => AuthService());
 
@@ -64,14 +65,30 @@ class AuthNotifier extends StateNotifier<AuthState> {
       
       state = state.copyWith(isLoading: false, isAuthenticated: true, token: token, email: email);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _getErrorMessage(e));
     }
   }
 
-  Future<void> register(String email, String password) async {
+  Future<void> register({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required String gender,
+    required String birthdate,
+    String? address,
+  }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final data = await _authService.register(email, password);
+      final data = await _authService.register(
+        email: email,
+        password: password,
+        firstName: firstName,
+        lastName: lastName,
+        gender: gender,
+        birthdate: birthdate,
+        address: address,
+      );
       final token = data['token'];
       
       final prefs = await SharedPreferences.getInstance();
@@ -80,8 +97,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
       
       state = state.copyWith(isLoading: false, isAuthenticated: true, token: token, email: email);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _getErrorMessage(e));
     }
+  }
+
+  String _getErrorMessage(dynamic e) {
+    if (e is DioException) {
+      if (e.response?.data != null && e.response?.data is Map) {
+        final data = e.response!.data as Map;
+        return data['error'] ?? data['message'] ?? e.message ?? e.toString();
+      }
+      return e.message ?? e.toString();
+    }
+    String msg = e.toString();
+    if (msg.startsWith('Exception: ')) {
+      return msg.replaceFirst('Exception: ', '');
+    }
+    return msg;
   }
 
   Future<void> logout() async {
