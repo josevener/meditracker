@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'dart:typed_data';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -15,9 +16,39 @@ class NotificationService {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     
+    const DarwinInitializationSettings initializationSettingsDarwin =
+        DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+      // This is crucial for showing notifications while the app is in foreground
+      defaultPresentAlert: true,
+      defaultPresentSound: true,
+      defaultPresentBadge: true,
+    );
+    
     const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
+      iOS: initializationSettingsDarwin,
+      macOS: initializationSettingsDarwin,
     );
+
+    // Create a high importance channel for Android to ensure heads-up notifications
+    final androidPlugin = _notificationsPlugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+        'medtrack_alarm_channel', // id
+        'Medication Alarms', // title
+        description: 'This channel is used for important medication reminders.', // description
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+        showBadge: true,
+      );
+      await androidPlugin.createNotificationChannel(channel);
+      print('Notification: High importance channel created');
+    }
 
     await _notificationsPlugin.initialize(
       initializationSettings,
@@ -34,16 +65,13 @@ class NotificationService {
         if (medId == null) return;
 
         if (actionId == 'mark_taken') {
-          // We'll need a way to reach the repository. 
-          // Since this is a service, we'll use a callback or global provider.
-          // For now, let's assume we'll trigger a refresh or handle it via a singleton/registry.
           _handleAction(medId, time, 'taken');
         } else if (actionId == 'snooze') {
           final now = DateTime.now();
           final snoozeTime = now.add(const Duration(minutes: 15));
           await scheduleNotification(
-            id: medId + 1000, // Unique ID for snooze
-            title: 'Snooze: ${parts[2]}',
+            id: medId + 1000, 
+            title: 'Snooze: ${parts.length > 2 ? parts[2] : "Medication"}',
             body: 'It\'s time to take your medication (Snoozed)',
             scheduledDate: snoozeTime,
             payload: payload,
@@ -53,11 +81,9 @@ class NotificationService {
     );
 
     // Request permissions for Android 13+
-    final androidImplementation = _notificationsPlugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    if (androidImplementation != null) {
-      await androidImplementation.requestNotificationsPermission();
-      await androidImplementation.requestExactAlarmsPermission();
+    if (androidPlugin != null) {
+      await androidPlugin.requestNotificationsPermission();
+      await androidPlugin.requestExactAlarmsPermission();
     }
   }
 
@@ -69,6 +95,7 @@ class NotificationService {
     String? payload,
   }) async {
     try {
+      print('Notification: Scheduling for ${scheduledDate.toIso8601String()} with ID $id');
       await _notificationsPlugin.zonedSchedule(
         id,
         title,
@@ -76,23 +103,32 @@ class NotificationService {
         tz.TZDateTime.from(scheduledDate, tz.local),
         NotificationDetails(
           android: AndroidNotificationDetails(
-            'medtrack_channel',
-            'Medication Reminders',
-            channelDescription: 'Notifications for medication schedule',
+            'medtrack_alarm_channel',
+            'Medication Alarms',
+            channelDescription: 'This channel is used for important medication reminders.',
             importance: Importance.max,
-            priority: Priority.high,
+            priority: Priority.max,
+            ticker: 'ticker',
+            playSound: true,
+            enableVibration: true,
+            fullScreenIntent: true, // Allow covering screen if locked
+            category: AndroidNotificationCategory.alarm,
+            audioAttributesUsage: AudioAttributesUsage.alarm,
+            visibility: NotificationVisibility.public,
+            additionalFlags: Int32List.fromList([4]), // FLAG_INSISTENT
             actions: <AndroidNotificationAction>[
               const AndroidNotificationAction(
                 'mark_taken',
                 'Mark as Taken',
                 showsUserInterface: true,
               ),
-              const AndroidNotificationAction(
-                'snooze',
-                'Snooze (15m)',
-                showsUserInterface: false,
-              ),
             ],
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            interruptionLevel: InterruptionLevel.timeSensitive,
           ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -101,25 +137,39 @@ class NotificationService {
         matchDateTimeComponents: DateTimeComponents.time,
         payload: payload,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Notification Error scheduling: $e');
+      print('Notification StackTrace: $stackTrace');
       // Fallback if exact alarm is not permitted
       final errorStr = e.toString().toLowerCase();
       bool isExactAlarmError = errorStr.contains('exact_alarm_not_permitted') || 
                                errorStr.contains('exact_alarms_not_permitted');
       
       if (isExactAlarmError) {
+        print('Notification: Falling back to inexact schedule');
         await _notificationsPlugin.zonedSchedule(
           id,
           title,
           body,
           tz.TZDateTime.from(scheduledDate, tz.UTC),
-          const NotificationDetails(
+        NotificationDetails(
             android: AndroidNotificationDetails(
-              'medtrack_channel',
-              'Medication Reminders',
-              channelDescription: 'Notifications for medication schedule (fallback)',
+              'medtrack_alarm_channel',
+              'Medication Alarms',
+              channelDescription: 'This channel is used for important medication reminders. (fallback)',
               importance: Importance.max,
-              priority: Priority.high,
+              priority: Priority.max,
+              playSound: true,
+              enableVibration: true,
+              category: AndroidNotificationCategory.alarm,
+              audioAttributesUsage: AudioAttributesUsage.alarm,
+              visibility: NotificationVisibility.public,
+              additionalFlags: Int32List.fromList([4]), // FLAG_INSISTENT
+            ),
+            iOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
             ),
           ),
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
