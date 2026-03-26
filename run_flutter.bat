@@ -1,1 +1,1 @@
-cd mobile-app && flutter run
+flutter run

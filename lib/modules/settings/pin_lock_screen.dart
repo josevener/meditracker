@@ -26,21 +26,22 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
   String _firstEnteredPin = ''; // Used for setup confirmation
   bool _isConfirming = false;
   String _errorMessage = '';
+  bool _biometricTriggered = false; // Flag to ensure auto-trigger happens only once
 
   @override
   void initState() {
     super.initState();
-    if (!widget.isSetupMode) {
-      _checkBiometrics();
-    }
   }
 
   Future<void> _checkBiometrics() async {
     final biometricEnabled = ref.read(biometricEnabledProvider);
-    if (biometricEnabled) {
-      // Delay slightly to allow the screen to render
-      await Future.delayed(const Duration(milliseconds: 300));
-      _authenticateWithBiometrics();
+    if (biometricEnabled && !_biometricTriggered) {
+      _biometricTriggered = true;
+      // Delay slightly to allow the screen to render and transitions to complete
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        _authenticateWithBiometrics();
+      }
     }
   }
 
@@ -132,6 +133,13 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.isSetupMode) {
+      final biometricEnabled = ref.watch(biometricEnabledProvider);
+      if (biometricEnabled && !_biometricTriggered) {
+        _checkBiometrics();
+      }
+    }
+
     final title = widget.isSetupMode 
         ? (_isConfirming ? 'Confirm PIN' : 'Create PIN') 
         : 'Enter PIN';
