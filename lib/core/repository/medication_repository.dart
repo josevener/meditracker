@@ -1,7 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:medtrack_mobile/core/database/local_db.dart';
 import 'package:medtrack_mobile/modules/medications/medication_model.dart' as model;
-import 'package:medtrack_mobile/services/medication_service.dart';
 import 'package:medtrack_mobile/services/notification_service.dart';
 import 'package:intl/intl.dart';
 
@@ -57,7 +56,6 @@ class MedicationRepository {
             ));
       }
     });
-    // Trigger background sync (to be implemented)
     await _scheduleNotifications(med);
   }
 
@@ -93,7 +91,6 @@ class MedicationRepository {
     await (_db.update(_db.medications)..where((t) => t.id.equals(id))).write(
           const MedicationsCompanion(isDeleted: Value(true), isSynced: Value(false)),
         );
-    // Trigger background sync
     await NotificationService().cancelAll();
     // After cancel all, we should theoretically reschedule all remaining meds
     // For simplicity, we can call a global reschedule or just rely on the fact 
@@ -139,7 +136,6 @@ class MedicationRepository {
           takenAt: Value(DateTime.now().toIso8601String()),
           isSynced: const Value(false),
         ));
-    // Trigger sync
   }
 
   Future<List<IntakeLogWithMed>> getLogsForDate(String date) async {

@@ -38,12 +38,36 @@ class IntakeLogs extends Table {
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
 }
 
-@DriftDatabase(tables: [Medications, Schedules, IntakeLogs])
-class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+class AppSettings extends Table {
+  TextColumn get key => text()();
+  TextColumn get value => text().nullable()();
 
   @override
-  int get schemaVersion => 2;
+  Set<Column> get primaryKey => {key};
+}
+
+@DriftDatabase(tables: [Medications, Schedules, IntakeLogs, AppSettings])
+class AppDatabase extends _$AppDatabase {
+  AppDatabase() : super(_openConnection());
+  AppDatabase.test(QueryExecutor executor) : super(executor);
+
+  @override
+  int get schemaVersion => 3;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (m) async {
+        await m.createAll();
+      },
+      onUpgrade: (m, from, to) async {
+        if (from < 3) {
+          // Add newer tables here
+          await m.createTable(appSettings);
+        }
+      },
+    );
+  }
 }
 
 LazyDatabase _openConnection() {

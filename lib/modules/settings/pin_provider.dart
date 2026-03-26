@@ -1,17 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:medtrack_mobile/core/repository/settings_repository.dart';
 
 class PinNotifier extends StateNotifier<AsyncValue<String?>> {
-  PinNotifier() : super(const AsyncValue.loading()) {
+  final SettingsRepository _repository;
+
+  PinNotifier(this._repository) : super(const AsyncValue.loading()) {
     _loadPin();
   }
 
-  static const _pinKey = 'user_pin';
-
   Future<void> _loadPin() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final pin = prefs.getString(_pinKey);
+      final pin = await _repository.getUserPin();
       state = AsyncValue.data(pin);
     } 
     catch (e, st) {
@@ -21,8 +20,7 @@ class PinNotifier extends StateNotifier<AsyncValue<String?>> {
 
   Future<void> setPin(String pin) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_pinKey, pin);
+      await _repository.setUserPin(pin);
       state = AsyncValue.data(pin);
     } 
     catch (e, st) {
@@ -32,8 +30,7 @@ class PinNotifier extends StateNotifier<AsyncValue<String?>> {
 
   Future<void> removePin() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_pinKey);
+      await _repository.setUserPin(null);
       state = const AsyncValue.data(null);
     } 
     catch (e, st) {
@@ -45,5 +42,5 @@ class PinNotifier extends StateNotifier<AsyncValue<String?>> {
 }
 
 final pinProvider = StateNotifierProvider<PinNotifier, AsyncValue<String?>>((ref) {
-  return PinNotifier();
+  return PinNotifier(ref.watch(settingsRepositoryProvider));
 });

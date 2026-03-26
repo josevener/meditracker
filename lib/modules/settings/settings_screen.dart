@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:medtrack_mobile/modules/auth/auth_provider.dart';
 import 'package:medtrack_mobile/modules/medications/medication_provider.dart';
 import 'package:medtrack_mobile/modules/settings/biometric_provider.dart';
 import 'package:medtrack_mobile/modules/settings/pin_provider.dart';
 import 'package:medtrack_mobile/modules/settings/pin_lock_screen.dart';
+import 'package:medtrack_mobile/modules/settings/reminders_provider.dart';
 import 'package:medtrack_mobile/widgets/confirmation_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -12,7 +12,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
+    final remindersEnabled = ref.watch(remindersEnabledProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -22,53 +22,6 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildSectionTitle('Account'),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.email_outlined, size: 20),
-                  title: const Text('Email', style: TextStyle(fontSize: 13, color: Colors.grey)),
-                  subtitle: Text(
-                    authState.email ?? 'Not logged in',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.pink.shade900,
-                    ),
-                  ),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.logout, size: 20, color: Colors.redAccent),
-                  title: const Text(
-                    'Logout',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.redAccent),
-                  ),
-                  onTap: () => _handleLogout(context, ref),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildSectionTitle('Data & Sync'),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.sync, size: 20),
-                  title: const Text('Manual Sync', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Push local changes to server', style: TextStyle(fontSize: 12)),
-                  trailing: Icon(Icons.arrow_forward_ios, size: 14, color: Colors.pink.shade200),
-                  onTap: () => _handleSync(context, ref),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
           _buildSectionTitle('Preferences'),
           Card(
             child: Column(
@@ -78,8 +31,9 @@ class SettingsScreen extends ConsumerWidget {
                   secondary: const Icon(Icons.notifications_active_outlined, size: 20),
                   title: const Text('Reminders', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   subtitle: const Text('Get notified for medication times', style: TextStyle(fontSize: 12)),
-                  value: true, // TODO: Implement persistent settings
+                  value: remindersEnabled,
                   onChanged: (val) {
+                    ref.read(remindersEnabledProvider.notifier).toggle(val);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Settings saved'), duration: Duration(seconds: 1)),
                     );
@@ -128,59 +82,24 @@ class SettingsScreen extends ConsumerWidget {
           Card(
             child: Column(
               children: [
-                Consumer(
-                  builder: (context, ref, child) {
-                    final pinState = ref.watch(pinProvider);
-                    final isPinSet = pinState.value != null;
-                    return SwitchListTile(
-                      dense: true,
-                      secondary: const Icon(Icons.password, size: 20),
-                      title: const Text('PIN Lock', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                      subtitle: const Text('Require a 6-digit PIN to open the app', style: TextStyle(fontSize: 12)),
-                      value: isPinSet,
-                      onChanged: (val) {
-                        if (val) {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const PinLockScreen(isSetupMode: true),
-                            ),
-                          );
-                        } else {
-                          ConfirmationDialog.show(
-                            context: context,
-                            title: 'Disable PIN',
-                            content: 'Are you sure you want to disable PIN protection?',
-                            confirmText: 'Disable',
-                            confirmColor: Colors.redAccent,
-                            onConfirm: () => ref.read(pinProvider.notifier).removePin(),
-                          );
-                        }
-                      },
-                      activeColor: Colors.pink.shade600,
-                    );
-                  },
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.password, size: 20),
+                  title: const Text('Mandatory PIN Lock', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  subtitle: const Text('A 6-digit PIN is required for app security', style: TextStyle(fontSize: 12)),
+                  trailing: Icon(Icons.lock, size: 14, color: Colors.pink.shade100),
                 ),
-                Consumer(
-                  builder: (context, ref, child) {
-                    final pinState = ref.watch(pinProvider);
-                    if (pinState.value == null) return const SizedBox.shrink();
-                    return Column(
-                      children: [
-                        const Divider(height: 1),
-                        ListTile(
-                          dense: true,
-                          leading: const Icon(Icons.edit_outlined, size: 20),
-                          title: const Text('Change PIN', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                          trailing: Icon(Icons.arrow_forward_ios, size: 14, color: Colors.pink.shade200),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const PinLockScreen(isSetupMode: true),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                const Divider(height: 1),
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.edit_outlined, size: 20),
+                  title: const Text('Change PIN', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  trailing: Icon(Icons.arrow_forward_ios, size: 14, color: Colors.pink.shade200),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PinLockScreen(isSetupMode: true),
+                      ),
                     );
                   },
                 ),
@@ -193,38 +112,6 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _handleLogout(BuildContext context, WidgetRef ref) {
-    ConfirmationDialog.show(
-      context: context,
-      title: 'Logout',
-      content: 'Are you sure you want to logout?',
-      confirmText: 'Logout',
-      confirmColor: Colors.redAccent,
-      onConfirm: () {
-        ref.read(authProvider.notifier).logout();
-      },
-    );
-  }
-
-  Future<void> _handleSync(BuildContext context, WidgetRef ref) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Syncing data...', style: TextStyle(fontSize: 13))),
-    );
-    try {
-      await ref.read(syncServiceProvider).sync();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sync complete!', style: TextStyle(fontSize: 13))),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sync failed: $e', style: TextStyle(fontSize: 13))),
-        );
-      }
-    }
-  }
 
   Widget _buildSectionTitle(String title) {
     return Padding(

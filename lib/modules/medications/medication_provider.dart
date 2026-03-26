@@ -1,22 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:medtrack_mobile/modules/medications/medication_model.dart';
+import 'package:medtrack_mobile/core/database/database_provider.dart';
 import 'package:medtrack_mobile/core/database/local_db.dart' hide Medication;
 import 'package:medtrack_mobile/core/repository/medication_repository.dart';
-import 'package:medtrack_mobile/services/medication_service.dart';
-import 'package:medtrack_mobile/core/api/api_client.dart';
-import 'package:medtrack_mobile/services/sync_service.dart';
-
-final medicationServiceProvider = Provider((ref) => MedicationService(ref.watch(apiClientProvider)));
-
-final databaseProvider = Provider((ref) => AppDatabase());
+import 'package:medtrack_mobile/core/repository/medication_repository.dart';
 
 final medicationRepositoryProvider = Provider((ref) => MedicationRepository(
       ref.watch(databaseProvider),
-    ));
-
-final syncServiceProvider = Provider((ref) => SyncService(
-      ref.watch(databaseProvider),
-      ref.watch(medicationServiceProvider),
     ));
 
 class MedicationListNotifier extends StateNotifier<AsyncValue<List<Medication>>> {

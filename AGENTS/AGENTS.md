@@ -68,3 +68,4 @@ This file defines how AI coding agents (e.g. Antigravity and Codex) should behav
 # Final Note for Agents
 
 This repository is production-critical.
+This repository is offline-first.

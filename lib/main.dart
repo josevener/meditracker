@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:medtrack_mobile/modules/medications/medication_provider.dart';
-import 'package:medtrack_mobile/modules/auth/auth_provider.dart';
-import 'package:medtrack_mobile/modules/auth/login_screen.dart';
 import 'package:medtrack_mobile/modules/medications/medication_list_screen.dart';
 import 'package:medtrack_mobile/modules/daily_status/daily_status_screen.dart';
 import 'package:medtrack_mobile/services/notification_service.dart';
@@ -12,12 +10,13 @@ import 'package:medtrack_mobile/modules/settings/biometric_provider.dart';
 import 'package:medtrack_mobile/modules/settings/pin_provider.dart';
 import 'package:medtrack_mobile/modules/settings/pin_lock_screen.dart';
 import 'package:medtrack_mobile/widgets/notification_banner.dart';
-import 'package:medtrack_mobile/widgets/profile_drawer.dart';
+import 'package:medtrack_mobile/widgets/notification_banner.dart';
 import 'package:medtrack_mobile/widgets/notification_drawer.dart';
 import 'package:medtrack_mobile/modules/onboarding/onboarding_screen.dart';
+import 'package:medtrack_mobile/modules/onboarding/onboarding_provider.dart';
 import 'package:medtrack_mobile/core/navigation/navigation_provider.dart';
 import 'package:medtrack_mobile/core/notifications/in_app_notification_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:medtrack_mobile/core/repository/settings_repository.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 
@@ -41,21 +40,12 @@ class MedTrackApp extends ConsumerStatefulWidget {
 class _MedTrackAppState extends ConsumerState<MedTrackApp> {
   Timer? _dueCheckTimer;
   final Set<String> _notifiedTimes = {};
-  bool? _onboardingCompleted;
 
   @override
   void initState() {
     super.initState();
     _setupNotificationCallbacks();
     _startDueCheckTimer();
-    _checkOnboardingStatus();
-  }
-
-  Future<void> _checkOnboardingStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
-    });
   }
 
   @override
@@ -73,9 +63,6 @@ class _MedTrackAppState extends ConsumerState<MedTrackApp> {
   }
 
   void _checkDueMedications() {
-    final authState = ref.read(authProvider);
-    if (!authState.isAuthenticated) return;
-
     final medsValue = ref.read(medicationListProvider);
     medsValue.whenData((meds) {
       final now = DateTime.now();
@@ -112,17 +99,19 @@ class _MedTrackAppState extends ConsumerState<MedTrackApp> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
+    final onboardingCompleted = ref.watch(onboardingStatusProvider);
+    final pinState = ref.watch(pinProvider);
 
     Widget homeWidget;
-    if (_onboardingCompleted == null) {
+    if (onboardingCompleted == null || pinState is AsyncLoading) {
       homeWidget = const Scaffold(body: Center(child: CircularProgressIndicator()));
-    } else if (authState.isAuthenticated) {
-      homeWidget = const HomeScreen();
-    } else if (!_onboardingCompleted!) {
+    } else if (!onboardingCompleted) {
       homeWidget = const OnboardingScreen();
+    } else if (pinState.value == null) {
+      // PIN is mandatory but not set
+      homeWidget = const PinLockScreen(isSetupMode: true);
     } else {
-      homeWidget = const LoginScreen();
+      homeWidget = const HomeScreen();
     }
 
     return MaterialApp(
@@ -231,13 +220,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _handleStartup() async {
-    // 1. Sync data in background
-    Future.microtask(() => ref.read(syncServiceProvider).sync());
-
-    // 2. Security Flow - Use SharedPreferences directly for immediate startup check
-    final prefs = await SharedPreferences.getInstance();
-    final biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
-    final pin = prefs.getString('user_pin');
+    // 2. Security Flow - Use SettingsRepository
+    final repository = ref.read(settingsRepositoryProvider);
+    final biometricEnabled = await repository.isBiometricEnabled();
+    final pin = await repository.getUserPin();
     final isPinEnabled = pin != null;
 
     if (biometricEnabled || isPinEnabled) {
@@ -282,10 +268,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onPressed: _handleStartup,
                 child: const Text('Unlock App'),
               ),
-              TextButton(
-                onPressed: () => ref.read(authProvider.notifier).logout(),
-                child: const Text('Logout'),
-              ),
             ],
           ),
         ),
@@ -295,7 +277,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final selectedIndex = ref.watch(navigationProvider);
 
     return Scaffold(
-      drawer: const ProfileDrawer(),
       endDrawer: const NotificationDrawer(),
       appBar: selectedIndex == 3 
           ? null // Settings screen has its own AppBar
@@ -303,19 +284,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               toolbarHeight: 60,
               elevation: 0,
               centerTitle: true,
-              leading: Builder(
-                builder: (context) => IconButton(
-                  icon: CircleAvatar(
-                    radius: 14,
-                    backgroundColor: Colors.white,
-                    child: Text(
-                      (ref.watch(authProvider).email ?? 'U')[0].toUpperCase(),
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.pink),
-                    ),
-                  ),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                ),
-              ),
               title: const Text(
                 'MedTrack',
                 style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),

@@ -4,10 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:medtrack_mobile/modules/settings/pin_provider.dart';
 import 'package:medtrack_mobile/modules/settings/biometric_provider.dart';
-import 'package:medtrack_mobile/core/api/admin_pin_screen.dart';
-import 'package:medtrack_mobile/core/api/server_config_screen.dart';
-import 'package:medtrack_mobile/core/api/server_config_provider.dart';
-import 'package:medtrack_mobile/core/api/admin_pin_provider.dart';
+import 'package:medtrack_mobile/modules/settings/pin_provider.dart';
+import 'package:medtrack_mobile/modules/settings/biometric_provider.dart';
 
 class PinLockScreen extends ConsumerStatefulWidget {
   final bool isSetupMode;
@@ -100,9 +98,8 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
           if (widget.onAuthenticated != null) {
             widget.onAuthenticated!();
           } 
-          else {
-            Navigator.of(context).pop();
-          }
+          // Note: If no onAuthenticated and no navigator (root), 
+          // the parent (MedTrackApp) will rebuild via pinProvider state change.
         } 
         else {
           HapticFeedback.heavyImpact();
@@ -121,9 +118,7 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
         if (widget.onAuthenticated != null) {
           widget.onAuthenticated!();
         } 
-        else {
-          Navigator.of(context).pop();
-        }
+        // Note: Rebuild handled by parent if root
       } 
       else {
         HapticFeedback.heavyImpact();
@@ -152,48 +147,11 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
               ),
             ),
           ),
-          Positioned(
-            top: 10,
-            right: 10,
-            child: SafeArea(
-              child: IconButton(
-                icon: const Icon(Icons.dns_outlined, color: Colors.pink),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const AdminPinScreen(
-                        navigateTo: ServerConfigScreen(),
-                      ),
-                    ),
-                  );
-                },
-                tooltip: 'Server Settings',
-              ),
-            ),
-          ),
           SafeArea(
             child: Column(
               children: [
                 const SizedBox(height: 60),
-                GestureDetector(
-                  onLongPress: () async {
-                    HapticFeedback.heavyImpact();
-                    await ref.read(serverConfigProvider.notifier).resetToDefaults();
-                    // Also attempt to reset the backend PIN if reachable
-                    await ref.read(systemServiceProvider).updateAdminPin('102424');
-
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Server settings reset to defaults'),
-                          backgroundColor: Colors.orange,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  },
-                  child: const Icon(Icons.lock_outline, size: 48, color: Colors.pink),
-                ),
+                const Icon(Icons.lock_outline, size: 48, color: Colors.pink),
                 const SizedBox(height: 24),
                 Text(
                   title,
