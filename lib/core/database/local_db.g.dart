@@ -1701,6 +1701,216 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   }
 }
 
+class $DayTicksTable extends DayTicks with TableInfo<$DayTicksTable, DayTick> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DayTicksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<String> date = GeneratedColumn<String>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isTickedMeta = const VerificationMeta(
+    'isTicked',
+  );
+  @override
+  late final GeneratedColumn<bool> isTicked = GeneratedColumn<bool>(
+    'is_ticked',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_ticked" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [date, isTicked];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'day_ticks';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DayTick> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('is_ticked')) {
+      context.handle(
+        _isTickedMeta,
+        isTicked.isAcceptableOrUnknown(data['is_ticked']!, _isTickedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {date};
+  @override
+  DayTick map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DayTick(
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}date'],
+      )!,
+      isTicked: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_ticked'],
+      )!,
+    );
+  }
+
+  @override
+  $DayTicksTable createAlias(String alias) {
+    return $DayTicksTable(attachedDatabase, alias);
+  }
+}
+
+class DayTick extends DataClass implements Insertable<DayTick> {
+  final String date;
+  final bool isTicked;
+  const DayTick({required this.date, required this.isTicked});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['date'] = Variable<String>(date);
+    map['is_ticked'] = Variable<bool>(isTicked);
+    return map;
+  }
+
+  DayTicksCompanion toCompanion(bool nullToAbsent) {
+    return DayTicksCompanion(date: Value(date), isTicked: Value(isTicked));
+  }
+
+  factory DayTick.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DayTick(
+      date: serializer.fromJson<String>(json['date']),
+      isTicked: serializer.fromJson<bool>(json['isTicked']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'date': serializer.toJson<String>(date),
+      'isTicked': serializer.toJson<bool>(isTicked),
+    };
+  }
+
+  DayTick copyWith({String? date, bool? isTicked}) =>
+      DayTick(date: date ?? this.date, isTicked: isTicked ?? this.isTicked);
+  DayTick copyWithCompanion(DayTicksCompanion data) {
+    return DayTick(
+      date: data.date.present ? data.date.value : this.date,
+      isTicked: data.isTicked.present ? data.isTicked.value : this.isTicked,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DayTick(')
+          ..write('date: $date, ')
+          ..write('isTicked: $isTicked')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(date, isTicked);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DayTick &&
+          other.date == this.date &&
+          other.isTicked == this.isTicked);
+}
+
+class DayTicksCompanion extends UpdateCompanion<DayTick> {
+  final Value<String> date;
+  final Value<bool> isTicked;
+  final Value<int> rowid;
+  const DayTicksCompanion({
+    this.date = const Value.absent(),
+    this.isTicked = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DayTicksCompanion.insert({
+    required String date,
+    this.isTicked = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : date = Value(date);
+  static Insertable<DayTick> custom({
+    Expression<String>? date,
+    Expression<bool>? isTicked,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (date != null) 'date': date,
+      if (isTicked != null) 'is_ticked': isTicked,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DayTicksCompanion copyWith({
+    Value<String>? date,
+    Value<bool>? isTicked,
+    Value<int>? rowid,
+  }) {
+    return DayTicksCompanion(
+      date: date ?? this.date,
+      isTicked: isTicked ?? this.isTicked,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (date.present) {
+      map['date'] = Variable<String>(date.value);
+    }
+    if (isTicked.present) {
+      map['is_ticked'] = Variable<bool>(isTicked.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DayTicksCompanion(')
+          ..write('date: $date, ')
+          ..write('isTicked: $isTicked, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1708,6 +1918,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SchedulesTable schedules = $SchedulesTable(this);
   late final $IntakeLogsTable intakeLogs = $IntakeLogsTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
+  late final $DayTicksTable dayTicks = $DayTicksTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1717,6 +1928,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     schedules,
     intakeLogs,
     appSettings,
+    dayTicks,
   ];
 }
 
@@ -3037,6 +3249,143 @@ typedef $$AppSettingsTableProcessedTableManager =
       AppSetting,
       PrefetchHooks Function()
     >;
+typedef $$DayTicksTableCreateCompanionBuilder =
+    DayTicksCompanion Function({
+      required String date,
+      Value<bool> isTicked,
+      Value<int> rowid,
+    });
+typedef $$DayTicksTableUpdateCompanionBuilder =
+    DayTicksCompanion Function({
+      Value<String> date,
+      Value<bool> isTicked,
+      Value<int> rowid,
+    });
+
+class $$DayTicksTableFilterComposer
+    extends Composer<_$AppDatabase, $DayTicksTable> {
+  $$DayTicksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isTicked => $composableBuilder(
+    column: $table.isTicked,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DayTicksTableOrderingComposer
+    extends Composer<_$AppDatabase, $DayTicksTable> {
+  $$DayTicksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isTicked => $composableBuilder(
+    column: $table.isTicked,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DayTicksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DayTicksTable> {
+  $$DayTicksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<bool> get isTicked =>
+      $composableBuilder(column: $table.isTicked, builder: (column) => column);
+}
+
+class $$DayTicksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DayTicksTable,
+          DayTick,
+          $$DayTicksTableFilterComposer,
+          $$DayTicksTableOrderingComposer,
+          $$DayTicksTableAnnotationComposer,
+          $$DayTicksTableCreateCompanionBuilder,
+          $$DayTicksTableUpdateCompanionBuilder,
+          (DayTick, BaseReferences<_$AppDatabase, $DayTicksTable, DayTick>),
+          DayTick,
+          PrefetchHooks Function()
+        > {
+  $$DayTicksTableTableManager(_$AppDatabase db, $DayTicksTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DayTicksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DayTicksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DayTicksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> date = const Value.absent(),
+                Value<bool> isTicked = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DayTicksCompanion(
+                date: date,
+                isTicked: isTicked,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String date,
+                Value<bool> isTicked = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DayTicksCompanion.insert(
+                date: date,
+                isTicked: isTicked,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DayTicksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DayTicksTable,
+      DayTick,
+      $$DayTicksTableFilterComposer,
+      $$DayTicksTableOrderingComposer,
+      $$DayTicksTableAnnotationComposer,
+      $$DayTicksTableCreateCompanionBuilder,
+      $$DayTicksTableUpdateCompanionBuilder,
+      (DayTick, BaseReferences<_$AppDatabase, $DayTicksTable, DayTick>),
+      DayTick,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3049,4 +3398,6 @@ class $AppDatabaseManager {
       $$IntakeLogsTableTableManager(_db, _db.intakeLogs);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
+  $$DayTicksTableTableManager get dayTicks =>
+      $$DayTicksTableTableManager(_db, _db.dayTicks);
 }

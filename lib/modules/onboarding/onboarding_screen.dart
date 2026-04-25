@@ -28,7 +28,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ),
     OnboardingPage(
       title: 'Monitor Progress',
-      description: 'Track your adherence and stay informed about your health journey.',
+      description: 'Track your progress and stay informed about your health journey.',
       image: 'assets/images/progress.png',
       color: const Color(0xFFE3F2FD), // Light blue
     ),

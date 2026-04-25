@@ -46,13 +46,21 @@ class AppSettings extends Table {
   Set<Column> get primaryKey => {key};
 }
 
-@DriftDatabase(tables: [Medications, Schedules, IntakeLogs, AppSettings])
+class DayTicks extends Table {
+  TextColumn get date => text()();
+  BoolColumn get isTicked => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {date};
+}
+
+@DriftDatabase(tables: [Medications, Schedules, IntakeLogs, AppSettings, DayTicks])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.test(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -64,6 +72,9 @@ class AppDatabase extends _$AppDatabase {
         if (from < 3) {
           // Add newer tables here
           await m.createTable(appSettings);
+        }
+        if (from < 4) {
+          await m.createTable(dayTicks);
         }
       },
     );

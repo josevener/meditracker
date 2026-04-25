@@ -23,11 +23,7 @@ import 'dart:async';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService().init();
-  runApp(
-    const ProviderScope(
-      child: MedTrackApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MedTrackApp()));
 }
 
 class MedTrackApp extends ConsumerStatefulWidget {
@@ -72,16 +68,20 @@ class _MedTrackAppState extends ConsumerState<MedTrackApp> {
       for (final med in meds) {
         for (final schedule in med.schedules) {
           final notifyKey = '${med.id}_${today}_${schedule.timeOfDay}';
-          if (schedule.timeOfDay == currentTime && !_notifiedTimes.contains(notifyKey)) {
+          if (schedule.timeOfDay == currentTime &&
+              !_notifiedTimes.contains(notifyKey)) {
             _notifiedTimes.add(notifyKey);
-            ref.read(inAppNotificationProvider.notifier).show(
-              InAppNotification(
-                medId: med.id!,
-                title: 'Medication Ready',
-                body: 'It\'s time for your ${med.name} (${med.dosage ?? ""})',
-                time: schedule.timeOfDay,
-              ),
-            );
+            ref
+                .read(inAppNotificationProvider.notifier)
+                .show(
+                  InAppNotification(
+                    medId: med.id!,
+                    title: 'Medication Ready',
+                    body:
+                        'It\'s time for your ${med.name} (${med.dosage ?? ""})',
+                    time: schedule.timeOfDay,
+                  ),
+                );
           }
         }
       }
@@ -104,7 +104,9 @@ class _MedTrackAppState extends ConsumerState<MedTrackApp> {
 
     Widget homeWidget;
     if (onboardingCompleted == null || pinState is AsyncLoading) {
-      homeWidget = const Scaffold(body: Center(child: CircularProgressIndicator()));
+      homeWidget = const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     } else if (!onboardingCompleted) {
       homeWidget = const OnboardingScreen();
     } else if (pinState.value == null) {
@@ -147,7 +149,9 @@ class _MedTrackAppState extends ConsumerState<MedTrackApp> {
         cardTheme: CardThemeData(
           elevation: 1.5,
           shadowColor: Colors.black12,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           color: Colors.white,
           margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
         ),
@@ -155,16 +159,24 @@ class _MedTrackAppState extends ConsumerState<MedTrackApp> {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.pink.shade600,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            textStyle: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none,
@@ -241,8 +253,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         );
       }
-    } 
-    else {
+    } else {
       // Neither enabled
       if (mounted) {
         setState(() => _isAuthenticated = true);
@@ -260,9 +271,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               const Icon(Icons.lock_outline, size: 64, color: Colors.pink),
               const SizedBox(height: 20),
-              const Text('MedTrack is locked', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'MedTrack is locked',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
-              const Text('Authentication required to continue', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const Text(
+                'Authentication required to continue',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _handleStartup,
@@ -278,7 +295,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       endDrawer: const NotificationDrawer(),
-      appBar: selectedIndex == 3 
+      appBar: selectedIndex == 3
           ? null // Settings screen has its own AppBar
           : AppBar(
               toolbarHeight: 60,
@@ -286,7 +303,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               centerTitle: true,
               title: const Text(
                 'MedTrack',
-                style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
               ),
               actions: [
                 Builder(
@@ -310,19 +330,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         child: BottomNavigationBar(
           currentIndex: selectedIndex,
-          onTap: (index) => ref.read(navigationProvider.notifier).setIndex(index),
+          onTap: (index) =>
+              ref.read(navigationProvider.notifier).setIndex(index),
           selectedItemColor: Colors.pink.shade600,
           unselectedItemColor: Colors.grey.shade400,
           backgroundColor: Colors.white,
           type: BottomNavigationBarType.fixed,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 11,
+          ),
           unselectedLabelStyle: const TextStyle(fontSize: 10),
           iconSize: 22,
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.today_outlined), activeIcon: Icon(Icons.today), label: 'Today'),
-            BottomNavigationBarItem(icon: Icon(Icons.medication_outlined), activeIcon: Icon(Icons.medication), label: 'List'),
-            BottomNavigationBarItem(icon: Icon(Icons.calendar_month_outlined), activeIcon: Icon(Icons.calendar_month), label: 'Adherence'),
-            BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), activeIcon: Icon(Icons.settings), label: 'Settings'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.today_outlined),
+              activeIcon: Icon(Icons.today),
+              label: 'Today',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.medication_outlined),
+              activeIcon: Icon(Icons.medication),
+              label: 'List',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_month_outlined),
+              activeIcon: Icon(Icons.calendar_month),
+              label: 'Calendar',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings_outlined),
+              activeIcon: Icon(Icons.settings),
+              label: 'Settings',
+            ),
           ],
         ),
       ),

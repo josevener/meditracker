@@ -28,17 +28,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final repo = ref.watch(medicationRepositoryProvider);
 
     return Scaffold(
-      appBar: AppBar(toolbarHeight: 52, title: const Text('Adherence Calendar')),
+      appBar: AppBar(toolbarHeight: 52, title: const Text('Calendar')),
       body: Column(
         children: [
           Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             elevation: 1,
             shadowColor: Colors.black12,
-            child: FutureBuilder<Map<String, String>>(
-              future: repo.getAdherenceForMonth(_focusedDay),
+            child: FutureBuilder<List<dynamic>>(
+              future: Future.wait([
+                repo.getAdherenceForMonth(_focusedDay),
+                repo.getDayTicksForMonth(_focusedDay),
+              ]),
               builder: (context, snapshot) {
-                final adherence = snapshot.data ?? {};
+                final adherence = (snapshot.data?[0] as Map<String, String>?) ?? {};
+                final dayTicks = (snapshot.data?[1] as Set<String>?) ?? {};
                 return TableCalendar(
                   firstDay: DateTime.utc(2024, 1, 1),
                   lastDay: DateTime.utc(2030, 12, 31),
@@ -94,6 +98,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   calendarBuilders: CalendarBuilders(
                     markerBuilder: (context, day, events) {
                       final dateStr = DateFormat('yyyy-MM-dd').format(day);
+                      final isTicked = dayTicks.contains(dateStr);
+                      if (isTicked) {
+                        return Positioned(
+                          bottom: 4,
+                          child: Icon(
+                            Icons.favorite,
+                            color: Colors.pink.shade600,
+                            size: 14,
+                          ),
+                        );
+                      }
+                      
                       if (adherence.containsKey(dateStr)) {
                         final isCompleted = adherence[dateStr] == 'green';
                         return Positioned(
@@ -117,15 +133,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildLegendItem(Colors.pink.shade600, 'Completed', Icons.check_circle),
-                const SizedBox(width: 24),
-                _buildLegendItem(Colors.red.shade400, 'Missed/Partial', Icons.cancel),
+                _buildLegendItem(Colors.pink.shade600, 'Ticked', Icons.favorite),
+                const SizedBox(width: 16),
+                _buildLegendItem(Colors.pink.shade600, 'Taken', Icons.check_circle),
+                const SizedBox(width: 16),
+                _buildLegendItem(Colors.red.shade400, 'Missed', Icons.cancel),
               ],
             ),
           ),
+          _buildDailyTickButton(_selectedDay!),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Divider(height: 16, thickness: 1),
+            child: Divider(height: 8, thickness: 1),
           ),
           Expanded(
             child: _buildDayLogs(_selectedDay!),
@@ -146,6 +165,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   Widget _buildDayLogs(DateTime day) {
+    // ... existing _buildDayLogs code ...
     final repo = ref.watch(medicationRepositoryProvider);
     final dateStr = DateFormat('yyyy-MM-dd').format(day);
 
@@ -259,6 +279,64 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  Widget _buildDailyTickButton(DateTime day) {
+    final repo = ref.watch(medicationRepositoryProvider);
+    final dateStr = DateFormat('yyyy-MM-dd').format(day);
+
+    return FutureBuilder<bool>(
+      future: repo.isDayTicked(dateStr),
+      builder: (context, snapshot) {
+        final isTicked = snapshot.data ?? false;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: isTicked 
+                ? LinearGradient(colors: [Colors.pink.shade600, Colors.pink.shade400])
+                : LinearGradient(colors: [Colors.grey.shade200, Colors.grey.shade100]),
+              boxShadow: isTicked ? [
+                BoxShadow(color: Colors.pink.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))
+              ] : [],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () async {
+                  await repo.toggleDayTick(dateStr);
+                  setState(() {});
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isTicked ? Icons.favorite : Icons.favorite_border, 
+                        color: isTicked ? Colors.white : Colors.grey.shade600,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        isTicked ? 'Day Ticked!' : 'Tick this day',
+                        style: TextStyle(
+                          color: isTicked ? Colors.white : Colors.grey.shade700,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         );
       },
     );

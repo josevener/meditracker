@@ -169,6 +169,34 @@ class MedicationRepository {
     }
     return adherence;
   }
+
+  Future<void> toggleDayTick(String date) async {
+    final existing = await (_db.select(_db.dayTicks)..where((t) => t.date.equals(date))).getSingleOrNull();
+    if (existing != null) {
+      final newValue = !existing.isTicked;
+      await (_db.update(_db.dayTicks)..where((t) => t.date.equals(date))).write(DayTicksCompanion(isTicked: Value(newValue)));
+    } else {
+      await _db.into(_db.dayTicks).insert(DayTicksCompanion.insert(date: date, isTicked: const Value(true)));
+    }
+  }
+
+  Future<bool> isDayTicked(String date) async {
+    final result = await (_db.select(_db.dayTicks)..where((t) => t.date.equals(date))).getSingleOrNull();
+    return result?.isTicked ?? false;
+  }
+
+  Future<Set<String>> getDayTicksForMonth(DateTime month) async {
+    final startOfMonth = DateTime(month.year, month.month, 1);
+    final endOfMonth = DateTime(month.year, month.month + 1, 0);
+
+    final ticks = await (_db.select(_db.dayTicks)
+      ..where((t) => t.date.isBetweenValues(
+        DateFormat('yyyy-MM-dd').format(startOfMonth),
+        DateFormat('yyyy-MM-dd').format(endOfMonth),
+      ) & t.isTicked.equals(true))).get();
+
+    return ticks.map((t) => t.date).toSet();
+  }
 }
 
 class IntakeLogWithMed {
