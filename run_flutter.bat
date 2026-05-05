@@ -1,1 +1,1 @@
-flutter run
+flutter run --release

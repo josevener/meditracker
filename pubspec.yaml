@@ -1,7 +1,7 @@
 name: medtrack_mobile
 description: "A medication tracking mobile application."
-publish_to: 'none'
-version: 1.0.0+1
+publish_to: "none"
+version: 1.0.3+4
 
 environment:
   sdk: ^3.9.2
@@ -25,6 +25,8 @@ dependencies:
   path_provider: ^2.1.5
   timezone: ^0.9.4
   local_auth: ^3.0.1
+  flutter_native_splash: ^2.4.0
+
 
 dev_dependencies:
   flutter_test:
@@ -32,9 +34,30 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   drift_dev: ^2.23.0
   build_runner: ^2.4.15
+  flutter_launcher_icons: ^0.13.1
+
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/logo.png"
+  adaptive_icon_background: "#FFF0F5"
+  adaptive_icon_foreground: "assets/logo_foreground.png"
+
+flutter_native_splash:
+  color: "#FFF0F5"
+  image: assets/splash_logo.png
+  android_12:
+    image: assets/splash_logo.png
+    color: "#FFF0F5"
+  fullscreen: false
+
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/images/
+    - assets/logo.png
+    - assets/logo_foreground.png
+    - assets/splash_logo.png

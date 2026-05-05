@@ -17,13 +17,24 @@ import 'package:medtrack_mobile/modules/onboarding/onboarding_provider.dart';
 import 'package:medtrack_mobile/core/navigation/navigation_provider.dart';
 import 'package:medtrack_mobile/core/notifications/in_app_notification_provider.dart';
 import 'package:medtrack_mobile/core/repository/settings_repository.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService().init();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  
+  try {
+    await NotificationService().init();
+  } catch (e) {
+    debugPrint('Initialization error: $e');
+  }
+  
   runApp(const ProviderScope(child: MedTrackApp()));
+  
+  // Remove the splash screen after the first frame
+  FlutterNativeSplash.remove();
 }
 
 class MedTrackApp extends ConsumerStatefulWidget {
